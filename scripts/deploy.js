@@ -7,19 +7,17 @@
 const hre = require("hardhat");
 
 async function main() {
-  const currentTimestampInSeconds = Math.round(Date.now() / 1000);
-  const ONE_YEAR_IN_SECS = 365 * 24 * 60 * 60;
-  const unlockTime = currentTimestampInSeconds + ONE_YEAR_IN_SECS;
+  const biddingTime = 24 * 60 * 60;//ONE_DAY_IN_SECS
+  const signers = await hre.ethers.getSigners();
+  const beneficiary = signers[1].address;
 
-  const lockedAmount = hre.ethers.utils.parseEther("1");
+  const Auction = await hre.ethers.getContractFactory("SimpleAuction");
+  const auction = await Auction.deploy(biddingTime, beneficiary);
 
-  const Lock = await hre.ethers.getContractFactory("Lock");
-  const lock = await Lock.deploy(unlockTime, { value: lockedAmount });
-
-  await lock.deployed();
+  await auction.deployed();
 
   console.log(
-    `Lock with 1 ETH and unlock timestamp ${unlockTime} deployed to ${lock.address}`
+    `Auction with bidding time ${biddingTime} seconds and beneficiary ${beneficiary} deployed to ${auction.address}`
   );
 }
 
