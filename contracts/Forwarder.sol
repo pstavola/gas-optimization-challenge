@@ -20,28 +20,35 @@ interface IToken {
 }
 
 contract Forwarder {
+    struct Input {
+        address payer;
+        uint256 amount;
+        uint256 deadline;
+        address token;
+        uint8 v;
+        bytes32 r;
+        bytes32 s;
+    }
+
     /// Batch signature and transfer
-    function payViaSignature(
-        address[] calldata payer,
-        uint256[] calldata amount,
-        uint256[] calldata deadline,
-        address[] calldata _token,
-        uint8[] calldata v,
-        bytes32[] calldata r,
-        bytes32[] calldata s
-    ) external {
-        for (uint i = 0; i < payer.length; i++) {
-            IToken token = IToken(_token[i]);
+    function payViaSignature(Input[] calldata _inputs) external {
+        for (uint i = 0; i < _inputs.length; ) {
+            Input memory input = _inputs[i];
+            IToken token = IToken(input.token);
             token.permit(
-                payer[i],
+                input.payer,
                 address(this),
-                amount[i],
-                deadline[i],
-                v[i],
-                r[i],
-                s[i]
+                input.amount,
+                input.deadline,
+                input.v,
+                input.r,
+                input.s
             );
-            token.transferFrom(payer[i], msg.sender, amount[i]);
+            token.transferFrom(input.payer, msg.sender, input.amount);
+
+            unchecked {
+                ++i;
+            }
         }
     }
 }
