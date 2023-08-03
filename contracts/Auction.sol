@@ -5,8 +5,8 @@ contract SimpleAuction {
     // Parameters of the auction. Times are either
     // absolute unix timestamps (seconds since 1970-01-01)
     // or time periods in seconds.
-    address payable public beneficiary;
-    uint public auctionEndTime;
+    address payable public immutable beneficiary;
+    uint public immutable auctionEndTime;
 
     // Current state of the auction.
     address public highestBidder;
@@ -20,8 +20,13 @@ contract SimpleAuction {
     bool ended;
 
     // Events that will be emitted on changes.
-    event HighestBidIncreased(address bidder, uint amount);
-    event AuctionEnded(address winner, uint amount);
+    event HighestBidIncreased(address indexed bidder, uint indexed amount);
+    event AuctionEnded(address indexed winner, uint indexed amount);
+
+    error EndTimeReached();
+    error NotHighestBid(uint highestBid);
+    error EndTimeNotYetReached();
+    error AuctionAlreadyEnded();
 
     /// Create a simple auction with `biddingTime`
     /// seconds bidding time on behalf of the
@@ -44,14 +49,16 @@ contract SimpleAuction {
 
         // Revert the call if the bidding
         // period is over.
-        require(block.timestamp <= auctionEndTime, "auction already ended");
+        if(block.timestamp > auctionEndTime)
+            revert EndTimeReached();
 
         // If the bid is not higher, send the
         // money back (the revert statement
         // will revert all changes in this
         // function execution including
         // it having received the money).
-        require(msg.value > highestBid, "Bid not high enough");
+        if(msg.value <= highestBid)
+            revert NotHighestBid(highestBid);
 
         if (highestBid > 0) {
             // Sending back the money by simply using
@@ -104,9 +111,11 @@ contract SimpleAuction {
         // external contracts.
 
         // 1. Conditions
-        require(block.timestamp >= auctionEndTime, "Auction Not Yet Ended");
+        if(block.timestamp < auctionEndTime)
+            revert EndTimeNotYetReached();
 
-        require(!ended, "Auction End Already Called");
+        if(ended)
+            revert AuctionAlreadyEnded();
 
         // 2. Effects
         ended = true;
