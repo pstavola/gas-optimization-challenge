@@ -23,3 +23,13 @@ Block limit: 30000000 gas
 |withdraw|23543|28577|26060|2|
 |Deployments|||266372||
 
+## Purchase
+
+**Before**
+|Methods|Min|Max|Avg|# calls|
+|---|---|---|---|---|
+|abort|-|-|53270|1|
+|confirmPurchase|-|-|46533|3|
+|confirmReceived|-|-|36210|2|
+|refundSeller|-|-|38417|1|
+|Deployments|||370617||
