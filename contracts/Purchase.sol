@@ -2,8 +2,9 @@
 pragma solidity ^0.8.4;
 
 contract Purchase {
-    uint public value;
-    address payable public seller;
+    // @optimization use immutable keyword
+    uint public immutable value;
+    address payable public immutable seller;
     address payable public buyer;
 
     enum State {
@@ -21,17 +22,19 @@ contract Purchase {
     }
 
     modifier onlyBuyer() {
-        require(msg.sender == buyer, "Only Buyer");
+        if(msg.sender != buyer) revert OnlyBuyer();
         _;
     }
 
     modifier onlySeller() {
-        require(msg.sender == seller, "Only seller");
+        // @optimization calling local function
+        _onlySeller();
         _;
     }
 
     modifier inState(State state_) {
-        require(state == state_, "Invalid state");
+        // @optimization calling local function
+        _inState(state_);
         _;
     }
 
@@ -40,14 +43,28 @@ contract Purchase {
     event ItemReceived();
     event SellerRefunded();
 
+    // @optimization using custom errors
+    /// Only the buyer can call this function.
+    /// Zero address
+    error ZeroAddress();
+    /// The provided value has to be even.
+    error OddNumber(uint value);
+    /// Only the seller can call this function.
+    error OnlySeller();
+    /// Only the buyer can call this function.
+    error OnlyBuyer();
+    /// The function cannot be called at the current state.
+    error InvalidState();
+
     // Ensure that `msg.value` is an even number.
     // Division will truncate if it is an odd number.
     // Check via multiplication that it wasn't an odd number.
     constructor(address _seller) payable {
-        require(_seller != address(0), "Zero address");
+        if(_seller == address(0)) revert ZeroAddress();
         seller = payable(_seller);
-        value = msg.value / 2;
-        require((2 * value) == msg.value, "Value not even");
+        // @optimization using bitwise operators
+        if (msg.value & 1 != 0) revert OddNumber(msg.value);
+        value = msg.value >> 1;
     }
 
     /// Abort the purchase and reclaim the ether.
@@ -67,11 +84,12 @@ contract Purchase {
     /// Transaction has to include `2 * value` ether.
     /// The ether will be locked until confirmReceived
     /// is called.
+    // @optimization using bitwise operators
     function confirmPurchase()
         external
         payable
         inState(State.Created)
-        condition(msg.value == (2 * value))
+        condition(msg.value == (value << 1))
     {
         emit PurchaseConfirmed();
         buyer = payable(msg.sender);
@@ -100,5 +118,14 @@ contract Purchase {
         state = State.Inactive;
 
         seller.transfer(3 * value);
+    }
+
+    // @optimization modifier calls this local function
+    function _onlySeller() internal view virtual {
+        if(msg.sender != seller) revert OnlySeller();
+    }
+    // @optimization modifier calls this local function
+    function _inState(State state_) internal view virtual {
+        if(state != state_) revert InvalidState();
     }
 }
