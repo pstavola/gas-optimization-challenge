@@ -33,3 +33,12 @@ Block limit: 30000000 gas
 |confirmReceived|-|-|36210|2|
 |refundSeller|-|-|38417|1|
 |Deployments|||370617||
+
+**After**
+|Methods|Min|Max|Avg|# calls|
+|---|---|---|---|---|
+|abort|-|-|51257|1|
+|confirmPurchase|-|-|44478|3|
+|confirmReceived|-|-|34078|2|
+|refundSeller|-|-|34202|1|
+|Deployments|||346760||
