@@ -52,3 +52,11 @@ Block limit: 30000000 gas
 |giveRightToVote|48286|48298|48296|6|
 |vote|-|-|72331|3|
 |Deployments|||647762||
+
+**After**
+|Methods|Min|Max|Avg|# calls|
+|---|---|---|---|---|
+|delegate|-|-|32521|1|
+|giveRightToVote|44307|44319|44317|6|
+|vote|-|-|51073|3|
+|Deployments|||496026||
