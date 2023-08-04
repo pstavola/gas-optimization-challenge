@@ -6,20 +6,25 @@ contract Ballot {
     // This declares a new complex type which will
     // be used for variables later.
     // It will represent a single voter.
+    // @optimization packing storage variables
     struct Voter {
-        uint weight; // weight is accumulated by delegation
+        uint32 weight; // weight is accumulated by delegation
+        uint32 vote; // index of the voted proposal
         bool voted; // if true, that person already voted
         address delegate; // person delegated to
-        uint vote; // index of the voted proposal
     }
 
     // This is a type for a single proposal.
+    // @optimization packing storage variables
     struct Proposal {
-        string name; // short name
-        uint voteCount; // number of accumulated votes
+        // @optimization using fixed size bytes array 
+        bytes32 name; // short name
+        // @optimization using fixed size var
+        uint32 voteCount; // number of accumulated votes
     }
 
-    address public chairperson;
+    // @optimization using immutable keyword
+    address public immutable chairperson;
 
     // This declares a state variable that
     // stores a `Voter` struct for each possible address.
@@ -28,19 +33,35 @@ contract Ballot {
     // A dynamically-sized array of `Proposal` structs.
     Proposal[] public proposals;
 
+    // @optimization using custom errors
+    /// Only chairperson can give right to vote.
+    error OnlyChairperson();
+    /// The voter already voted
+    error AlreadyVoted();
+    /// You have no right to vote
+    error NoRightToVote();
+    /// Self-delegation is disallowed
+    error SelfDelegNotAllowed();
+    /// Found loop in delegation
+    error DelegationLoop();
+
     /// Create a new ballot to choose one of `proposalNames`.
-    constructor(string[] memory proposalNames) {
+    constructor(bytes32[] memory proposalNames) {
         chairperson = msg.sender;
         voters[chairperson].weight = 1;
 
         // For each of the provided proposal names,
         // create a new proposal object and add it
         // to the end of the array.
-        for (uint i = 0; i < proposalNames.length; i++) {
+        for (uint i = 0; i < proposalNames.length; ) {
             // `Proposal({...})` creates a temporary
             // Proposal object and `proposals.push(...)`
             // appends it to the end of `proposals`.
             proposals.push(Proposal({name: proposalNames[i], voteCount: 0}));
+            // @optimization using unchecked keyword
+            unchecked {
+                ++i;
+            }
         }
     }
 
@@ -57,11 +78,8 @@ contract Ballot {
         // functions are called correctly.
         // As a second argument, you can also provide an
         // explanation about what went wrong.
-        require(
-            msg.sender == chairperson,
-            "Only chairperson can give right to vote."
-        );
-        require(!voters[voter].voted, "The voter already voted.");
+        if(msg.sender != chairperson) revert OnlyChairperson();
+        if(voters[voter].voted) revert AlreadyVoted();
         require(voters[voter].weight == 0);
         voters[voter].weight = 1;
     }
@@ -70,10 +88,10 @@ contract Ballot {
     function delegate(address to) external {
         // assigns reference
         Voter storage sender = voters[msg.sender];
-        require(sender.weight != 0, "You have no right to vote");
-        require(!sender.voted, "You already voted.");
+        if(sender.weight == 0) revert NoRightToVote();
+        if(sender.voted) revert AlreadyVoted();
 
-        require(to != msg.sender, "Self-delegation is disallowed.");
+        if(to == msg.sender) revert SelfDelegNotAllowed();
 
         // Forward the delegation as long as
         // `to` also delegated.
@@ -87,7 +105,7 @@ contract Ballot {
             to = voters[to].delegate;
 
             // We found a loop in the delegation, not allowed.
-            require(to != msg.sender, "Found loop in delegation.");
+            if(to == msg.sender) revert DelegationLoop();
         }
 
         Voter storage delegate_ = voters[to];
@@ -113,10 +131,10 @@ contract Ballot {
 
     /// Give your vote (including votes delegated to you)
     /// to proposal `proposals[proposal].name`.
-    function vote(uint proposal) external {
+    function vote(uint32 proposal) external {
         Voter storage sender = voters[msg.sender];
-        require(sender.weight != 0, "Has no right to vote");
-        require(!sender.voted, "Already voted.");
+        if(sender.weight == 0) revert NoRightToVote();
+        if(sender.voted) revert AlreadyVoted();
         sender.voted = true;
         sender.vote = proposal;
 
@@ -130,10 +148,14 @@ contract Ballot {
     /// previous votes into account.
     function winningProposal() public view returns (uint winningProposal_) {
         uint winningVoteCount = 0;
-        for (uint p = 0; p < proposals.length; p++) {
+        for (uint p = 0; p < proposals.length; ) {
             if (proposals[p].voteCount > winningVoteCount) {
                 winningVoteCount = proposals[p].voteCount;
                 winningProposal_ = p;
+            }
+            // @optimization using unchecked keyword
+            unchecked {
+                ++p;
             }
         }
     }
@@ -141,7 +163,7 @@ contract Ballot {
     // Calls winningProposal() function to get the index
     // of the winner contained in the proposals array and then
     // returns the name of the winner
-    function winnerName() external view returns (string memory winnerName_) {
+    function winnerName() external view returns (bytes32 winnerName_) {
         winnerName_ = proposals[winningProposal()].name;
     }
 }
