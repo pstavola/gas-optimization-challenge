@@ -42,3 +42,13 @@ Block limit: 30000000 gas
 |confirmReceived|-|-|34078|2|
 |refundSeller|-|-|34202|1|
 |Deployments|||346760||
+
+## Ballot
+
+**Before**
+|Methods|Min|Max|Avg|# calls|
+|---|---|---|---|---|
+|delegate|-|-|53812|1|
+|giveRightToVote|48286|48298|48296|6|
+|vote|-|-|72331|3|
+|Deployments|||647762||
