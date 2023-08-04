@@ -10,7 +10,7 @@ const {
     // and reset Hardhat Network to that snapshopt in every test.
     async function deploySimpleBallot() {
       const signers = await ethers.getSigners();
-      const proposals = ["Proposal X", "Proposal Y", "Proposal Z"];
+      const proposals = [ethers.utils.formatBytes32String("Proposal X"), ethers.utils.formatBytes32String("Proposal Y"), ethers.utils.formatBytes32String("Proposal Z")];
       // Contracts are deployed using the first signer/account by default
       const Ballot = await ethers.getContractFactory("Ballot");
       const ballot = await Ballot.deploy(proposals);
